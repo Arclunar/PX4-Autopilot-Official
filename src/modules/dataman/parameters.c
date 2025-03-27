@@ -34,10 +34,13 @@
 /**
  * Dataman storage backend
  *
+ * If the board supports persistent storage (i.e., the KConfig variable DATAMAN_PERSISTENT_STORAGE is set),
+ * the 'Default storage' backend uses a file on persistent storage. If not supported, it uses non-persistent storage in RAM.
+ *
  * @group System
  * @value -1 Disabled
- * @value 0 default (SD card)
- * @value 1 RAM (not persistent)
+ * @value 0 Default storage
+ * @value 1 RAM storage
  * @boolean
  * @reboot_required true
  */
