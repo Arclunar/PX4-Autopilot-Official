@@ -124,9 +124,6 @@ static constexpr hrt_abstime TERRAIN_ALT_FIRST_MEASUREMENT_TIMEOUT = 10_s;
 // [.] max throttle from user which will not lead to motors spinning up in altitude controlled modes
 static constexpr float THROTTLE_THRESH = -.9f;
 
-// [m/s/s] slew rate limit for airspeed setpoint changes
-static constexpr float ASPD_SP_SLEW_RATE = 1.f;
-
 // [us] time after which the wind estimate is disabled if no longer updating
 static constexpr hrt_abstime WIND_EST_TIMEOUT = 10_s;
 
@@ -676,8 +673,6 @@ private:
 	void set_control_mode_current(const hrt_abstime &now);
 
 	void publishOrbitStatus(const position_setpoint_s pos_sp);
-
-	SlewRate<float> _airspeed_slew_rate_controller;
 
 	float getMaxRollAngleNearGround(const float altitude, const float terrain_altitude) const;
 

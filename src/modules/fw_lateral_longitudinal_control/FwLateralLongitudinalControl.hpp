@@ -191,9 +191,9 @@ private:
 	hrt_abstime _time_since_first_reduced_roll{0U}; ///< absolute time since start when entering reduced roll angle for the first time
 	hrt_abstime _time_since_last_npfg_call{0U}; 	///< absolute time since start when the npfg reduced roll angle calculations was last performed
 	vehicle_attitude_setpoint_s _att_sp{};
-
 	bool _landed{false};
 	float _can_run_factor{0.f};
+	SlewRate<float> _airspeed_slew_rate_controller;
 
 	perf_counter_t _loop_perf; // loop performance counter
 
@@ -236,6 +236,21 @@ private:
 	void updateLongitudinalControlLimits(const longitudinal_control_limits_s &limits_in);
 
 	void updateControlLimits();
+
+	/**
+	 * @brief Returns an adapted calibrated airspeed setpoint
+	 *
+	 * Adjusts the setpoint for wind, accelerated stall, and slew rates.
+	 *
+	 * @param control_interval Time since the last position control update [s]
+	 * @param calibrated_airspeed_setpoint Calibrated airspeed septoint (generally from the position setpoint) [m/s]
+	 * @param calibrated_min_airspeed Minimum calibrated airspeed [m/s]
+	 * @param ground_speed Vehicle ground velocity vector (NE) [m/s]
+	 * @param in_takeoff_situation Vehicle is currently in a takeoff situation
+	 * @return Adjusted calibrated airspeed setpoint [m/s]
+	 */
+	float adapt_airspeed_setpoint(const float control_interval, float calibrated_airspeed_setpoint,
+				      float calibrated_min_airspeed, const matrix::Vector2f &ground_speed, bool in_takeoff_situation = false);
 };
 
 #endif //PX4_FWLATERALLONGITUDINALCONTROL_HPP

@@ -72,8 +72,6 @@ FixedwingPositionControl::FixedwingPositionControl(bool vtol) :
 	_spoilers_setpoint_pub.advertise();
 	_fixed_wing_lateral_guidance_status_pub.advertise();
 
-	_airspeed_slew_rate_controller.setSlewRate(ASPD_SP_SLEW_RATE);
-
 	parameters_update();
 }
 
@@ -289,56 +287,57 @@ FixedwingPositionControl::adapt_airspeed_setpoint(const float control_interval, 
 {
 	// --- airspeed *constraint adjustments ---
 
-	// Aditional option to increase the min airspeed setpoint based on wind estimate for more stability in higher winds.
-	if (!in_takeoff_situation && _airspeed_valid && _wind_valid && _param_fw_wind_arsp_sc.get() > FLT_EPSILON) {
-		calibrated_min_airspeed = math::min(calibrated_min_airspeed + _param_fw_wind_arsp_sc.get() *
-						    _wind_vel.length(), _performance_model.getMaximumCalibratedAirspeed());
-	}
+	// // Aditional option to increase the min airspeed setpoint based on wind estimate for more stability in higher winds.
+	// if (!in_takeoff_situation && _airspeed_valid && _wind_valid && _param_fw_wind_arsp_sc.get() > FLT_EPSILON) {
+	// 	calibrated_min_airspeed = math::min(calibrated_min_airspeed + _param_fw_wind_arsp_sc.get() *
+	// 					    _wind_vel.length(), _performance_model.getMaximumCalibratedAirspeed());
+	// }
 
-	// --- airspeed *setpoint adjustments ---
+	// // --- airspeed *setpoint adjustments ---
 
-	if (!PX4_ISFINITE(calibrated_airspeed_setpoint) || calibrated_airspeed_setpoint <= FLT_EPSILON) {
-		calibrated_airspeed_setpoint = _performance_model.getCalibratedTrimAirspeed();
-	}
+	// if (!PX4_ISFINITE(calibrated_airspeed_setpoint) || calibrated_airspeed_setpoint <= FLT_EPSILON) {
+	// 	calibrated_airspeed_setpoint = _performance_model.getCalibratedTrimAirspeed();
+	// }
 
-	// Adapt cruise airspeed when otherwise the min groundspeed couldn't be maintained
-	if (!_wind_valid && !in_takeoff_situation) {
-		/*
-		 * This error value ensures that a plane (as long as its throttle capability is
-		 * not exceeded) travels towards a waypoint (and is not pushed more and more away
-		 * by wind). Not countering this would lead to a fly-away. Only non-zero in presence
-		 * of sufficient wind. "minimum ground speed undershoot".
-		 */
-		const float ground_speed_body = _body_velocity_x;
+	// // Adapt cruise airspeed when otherwise the min groundspeed couldn't be maintained
+	// if (!_wind_valid && !in_takeoff_situation) {
+	// 	/*
+	// 	 * This error value ensures that a plane (as long as its throttle capability is
+	// 	 * not exceeded) travels towards a waypoint (and is not pushed more and more away
+	// 	 * by wind). Not countering this would lead to a fly-away. Only non-zero in presence
+	// 	 * of sufficient wind. "minimum ground speed undershoot".
+	// 	 */
+	// 	const float ground_speed_body = _body_velocity_x;
 
-		if (ground_speed_body < _param_fw_gnd_spd_min.get()) {
-			calibrated_airspeed_setpoint += _param_fw_gnd_spd_min.get() - ground_speed_body;
-		}
-	}
+	// 	if (ground_speed_body < _param_fw_gnd_spd_min.get()) {
+	// 		calibrated_airspeed_setpoint += _param_fw_gnd_spd_min.get() - ground_speed_body;
+	// 	}
+	// }
 
-	calibrated_airspeed_setpoint = constrain(calibrated_airspeed_setpoint, calibrated_min_airspeed,
-				       _performance_model.getMaximumCalibratedAirspeed());
+	// calibrated_airspeed_setpoint = constrain(calibrated_airspeed_setpoint, calibrated_min_airspeed,
+	// 			       _performance_model.getMaximumCalibratedAirspeed());
 
-	// initialize the airspeed setpoint to the max(current airsped, min airspeed)
-	if (!PX4_ISFINITE(_airspeed_slew_rate_controller.getState())) {
-		_airspeed_slew_rate_controller.setForcedValue(math::max(calibrated_min_airspeed, _airspeed_eas));
-	}
+	// // initialize the airspeed setpoint to the max(current airsped, min airspeed)
+	// if (!PX4_ISFINITE(_airspeed_slew_rate_controller.getState())) {
+	// 	_airspeed_slew_rate_controller.setForcedValue(math::max(calibrated_min_airspeed, _airspeed_eas));
+	// }
 
-	// reset the airspeed setpoint to the min airspeed if the min airspeed changes while in operation
-	if (_airspeed_slew_rate_controller.getState() < calibrated_min_airspeed) {
-		_airspeed_slew_rate_controller.setForcedValue(calibrated_min_airspeed);
-	}
+	// // reset the airspeed setpoint to the min airspeed if the min airspeed changes while in operation
+	// if (_airspeed_slew_rate_controller.getState() < calibrated_min_airspeed) {
+	// 	_airspeed_slew_rate_controller.setForcedValue(calibrated_min_airspeed);
+	// }
 
-	if (control_interval > FLT_EPSILON) {
-		// constrain airspeed setpoint changes with slew rate of ASPD_SP_SLEW_RATE m/s/s
-		_airspeed_slew_rate_controller.update(calibrated_airspeed_setpoint, control_interval);
-	}
+	// if (control_interval > FLT_EPSILON) {
+	// 	// constrain airspeed setpoint changes with slew rate of ASPD_SP_SLEW_RATE m/s/s
+	// 	_airspeed_slew_rate_controller.update(calibrated_airspeed_setpoint, control_interval);
+	// }
 
-	if (_airspeed_slew_rate_controller.getState() > _performance_model.getMaximumCalibratedAirspeed()) {
-		_airspeed_slew_rate_controller.setForcedValue(_performance_model.getMaximumCalibratedAirspeed());
-	}
+	// if (_airspeed_slew_rate_controller.getState() > _performance_model.getMaximumCalibratedAirspeed()) {
+	// 	_airspeed_slew_rate_controller.setForcedValue(_performance_model.getMaximumCalibratedAirspeed());
+	// }
 
-	return _airspeed_slew_rate_controller.getState();
+	// return _airspeed_slew_rate_controller.getState();
+	return 0.f;
 }
 
 void
@@ -1170,7 +1169,7 @@ FixedwingPositionControl::control_auto_takeoff(const hrt_abstime &now, const flo
 			_takeoff_init_position = global_position;
 			_takeoff_ground_alt = _current_altitude;
 			_launch_current_yaw = _yaw;
-			_airspeed_slew_rate_controller.setForcedValue(takeoff_airspeed);
+			// _airspeed_slew_rate_controller.setForcedValue(takeoff_airspeed);
 
 			events::send(events::ID("fixedwing_position_control_takeoff"), events::Log::Info, "Takeoff on runway");
 		}
@@ -1269,7 +1268,7 @@ FixedwingPositionControl::control_auto_takeoff(const hrt_abstime &now, const flo
 			_takeoff_init_position = global_position;
 			_takeoff_ground_alt = _current_altitude;
 			_launch_current_yaw = _yaw;
-			_airspeed_slew_rate_controller.setForcedValue(takeoff_airspeed);
+			// _airspeed_slew_rate_controller.setForcedValue(takeoff_airspeed);
 		}
 
 		const Vector2f launch_local_position = _global_local_proj_ref.project(_takeoff_init_position(0),

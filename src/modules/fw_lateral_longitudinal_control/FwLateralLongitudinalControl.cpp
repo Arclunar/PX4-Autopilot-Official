@@ -61,6 +61,8 @@ static constexpr uint64_t ROLL_WARNING_TIMEOUT = 2_s;
 // [-] Can-run threshold needed to trigger the roll-constraining failsafe warning
 static constexpr float ROLL_WARNING_CAN_RUN_THRESHOLD = 0.9f;
 
+// [m/s/s] slew rate limit for airspeed setpoint changes
+static constexpr float ASPD_SP_SLEW_RATE = 1.f;
 
 FwLateralLongitudinalControl::FwLateralLongitudinalControl(bool is_vtol) :
 	ModuleParams(nullptr),
@@ -72,6 +74,7 @@ FwLateralLongitudinalControl::FwLateralLongitudinalControl(bool is_vtol) :
 	_flight_phase_estimation_pub.advertise();
 	_fixed_wing_lateral_status_pub.advertise();
 	parameters_update();
+	_airspeed_slew_rate_controller.setSlewRate(ASPD_SP_SLEW_RATE);
 }
 
 FwLateralLongitudinalControl::~FwLateralLongitudinalControl()
@@ -587,6 +590,59 @@ void FwLateralLongitudinalControl::updateAirspeed() {
 
 	_tecs.enable_airspeed(airspeed_valid);
 }
+
+float
+FwLateralLongitudinalControl::adapt_airspeed_setpoint(const float control_interval, float calibrated_airspeed_setpoint,
+		float calibrated_min_airspeed, const Vector2f &ground_speed, bool in_takeoff_situation)
+{
+	// --- airspeed *constraint adjustments ---
+
+	// --- airspeed *setpoint adjustments ---
+
+	// if (!PX4_ISFINITE(calibrated_airspeed_setpoint) || calibrated_airspeed_setpoint <= FLT_EPSILON) {
+	// 	calibrated_airspeed_setpoint = _performance_model.getCalibratedTrimAirspeed();
+	// }
+
+	// // Adapt cruise airspeed when otherwise the min groundspeed couldn't be maintained
+	// if (_wind_valid && local_position_valid) {
+	// 	/*
+	// 	 * This error value ensures that a plane (as long as its throttle capability is
+	// 	 * not exceeded) travels towards a waypoint (and is not pushed more and more away
+	// 	 * by wind). Not countering this would lead to a fly-away. Only non-zero in presence
+	// 	 * of sufficient wind. "minimum ground speed undershoot".
+	// 	 */
+	// 	const float ground_speed_body = _body_velocity_x;
+
+	// 	if (ground_speed_body < _param_fw_gnd_spd_min.get()) {
+	// 		calibrated_airspeed_setpoint += _param_fw_gnd_spd_min.get() - ground_speed_body;
+	// 	}
+	// }
+
+	// calibrated_airspeed_setpoint = constrain(calibrated_airspeed_setpoint, calibrated_min_airspeed,
+	// 			       _performance_model.getMaximumCalibratedAirspeed());
+
+	// // initialize the airspeed setpoint to the max(current airsped, min airspeed)
+	// if (!PX4_ISFINITE(_airspeed_slew_rate_controller.getState())) {
+	// 	_airspeed_slew_rate_controller.setForcedValue(math::max(calibrated_min_airspeed, _airspeed_eas));
+	// }
+
+	// // reset the airspeed setpoint to the min airspeed if the min airspeed changes while in operation
+	// if (_airspeed_slew_rate_controller.getState() < calibrated_min_airspeed) {
+	// 	_airspeed_slew_rate_controller.setForcedValue(calibrated_min_airspeed);
+	// }
+
+	// if (control_interval > FLT_EPSILON) {
+	// 	// constrain airspeed setpoint changes with slew rate of ASPD_SP_SLEW_RATE m/s/s
+	// 	_airspeed_slew_rate_controller.update(calibrated_airspeed_setpoint, control_interval);
+	// }
+
+	// if (_airspeed_slew_rate_controller.getState() > _performance_model.getMaximumCalibratedAirspeed()) {
+	// 	_airspeed_slew_rate_controller.setForcedValue(_performance_model.getMaximumCalibratedAirspeed());
+	// }
+
+	return _airspeed_slew_rate_controller.getState();
+}
+
 bool FwLateralLongitudinalControl::checkLowHeightConditions() const
 {
 	// Are conditions for low-height
