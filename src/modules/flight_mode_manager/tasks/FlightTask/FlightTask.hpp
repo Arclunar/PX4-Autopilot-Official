@@ -232,7 +232,7 @@ protected:
 		uint8_t z;
 		uint8_t vz;
 		uint8_t heading;
-		uint8_t hagl;
+		uint8_t hagl; // height above ground level
 	} _reset_counters{}; ///< Counters for estimator local position resets
 
 	/**

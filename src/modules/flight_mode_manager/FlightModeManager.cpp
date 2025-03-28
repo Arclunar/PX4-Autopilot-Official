@@ -95,6 +95,7 @@ void FlightModeManager::Run()
 	}
 
 	// generate setpoints on local position changes
+  	//当位置发生变化时，生成期望的位置点
 	vehicle_local_position_s vehicle_local_position;
 
 	if (_vehicle_local_position_sub.update(&vehicle_local_position)) {
@@ -159,6 +160,7 @@ void FlightModeManager::start_flight_task()
 		found_some_task = true;
 		FlightTaskError error = FlightTaskError::InvalidTask;
 
+	// 只有不设置CONSTRAINED_FLASH才能尝试进入任务
 #if !defined(CONSTRAINED_FLASH)
 		error = switchTask(FlightTaskIndex::AutoFollowTarget);
 #endif // !CONSTRAINED_FLASH
@@ -276,6 +278,7 @@ void FlightModeManager::start_flight_task()
 	_no_matching_task_error_printed = !matching_task_running;
 }
 
+// adopt parameters from an arrived vehicle command
 void FlightModeManager::tryApplyCommandIfAny()
 {
 	if (isAnyTaskActive() && _current_command.command != 0 && hrt_absolute_time() < _current_command.timestamp + 200_ms) {
